@@ -2,16 +2,22 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
+import time
+import psycopg2
 
+# Inicjalizacja aplikacji Flask
 app = Flask(__name__)
 app.secret_key = 'tajny-klucz-sesji-2024'
 
+# Konfiguracja bazy danych
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL',
                                                        'postgresql://admin:haslo123@db:5432/wydarzenia_db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Inicjalizacja SQLAlchemy
 db = SQLAlchemy(app)
 
+# Hasła dostępu (nieszyfrowane jak w wymaganiach)
 HASLA_DOSTEPU = {
     'admin': 'admin123',
     'event1': 'haslo1',
@@ -19,6 +25,7 @@ HASLA_DOSTEPU = {
 }
 
 
+# Model danych - tabela wpisów
 class Wpis(db.Model):
     __tablename__ = 'wpisy'
 
@@ -46,25 +53,53 @@ class Wpis(db.Model):
         }
 
 
+def wait_for_database(max_retries=30, delay=2):
+    """Oczekiwanie na dostępność bazy danych"""
+    database_url = os.environ.get('DATABASE_URL', 'postgresql://admin:haslo123@db:5432/wydarzenia_db')
+
+    for attempt in range(max_retries):
+        try:
+            # Próba połączenia z bazą danych
+            conn = psycopg2.connect(database_url)
+            conn.close()
+            print(f"Połączenie z bazą danych udane po {attempt + 1} próbach")
+            return True
+        except psycopg2.OperationalError as e:
+            print(f"Próba {attempt + 1}/{max_retries}: Oczekiwanie na bazę danych... ({e})")
+            time.sleep(delay)
+
+    print("BŁĄD: Nie udało się połączyć z bazą danych po wszystkich próbach!")
+    return False
+
+
 def init_database():
     """Inicjalizacja bazy danych"""
     try:
+        # Najpierw poczekaj na bazę danych
+        if not wait_for_database():
+            return False
+
         with app.app_context():
             db.create_all()
             print("Baza danych zainicjalizowana pomyślnie")
+            return True
     except Exception as e:
         print(f"Błąd inicjalizacji bazy danych: {e}")
+        return False
 
 
 @app.route('/')
 def index():
+    """Strona główna z logowaniem"""
     return render_template('index.html')
 
 
 @app.route('/login', methods=['POST'])
 def login():
+    """Logowanie użytkownika"""
     haslo = request.form.get('haslo')
 
+    # Sprawdzenie hasła
     kategoria_znaleziona = None
     for kategoria, poprawne_haslo in HASLA_DOSTEPU.items():
         if haslo == poprawne_haslo:
@@ -92,21 +127,25 @@ def formularz():
 
 @app.route('/zapisz', methods=['POST'])
 def zapisz():
+    """Zapisanie danych z formularza"""
     if not session.get('zalogowany'):
         flash('Musisz się zalogować!')
         return redirect(url_for('index'))
 
     try:
+        # Pobranie danych z formularza
         imie = request.form.get('imie', '').strip()
         email = request.form.get('email', '').strip()
         telefon = request.form.get('telefon', '').strip()
         wiadomosc = request.form.get('wiadomosc', '').strip()
         kategoria = session.get('kategoria', 'ogolne')
 
+        # Walidacja podstawowych danych
         if not imie or not email:
             flash('Imię i email są wymagane!')
             return redirect(url_for('formularz'))
 
+        # Utworzenie nowego wpisu
         nowy_wpis = Wpis(
             imie=imie,
             email=email,
@@ -115,6 +154,7 @@ def zapisz():
             kategoria=kategoria
         )
 
+        # Zapisanie do bazy danych
         db.session.add(nowy_wpis)
         db.session.commit()
 
@@ -130,11 +170,13 @@ def zapisz():
 
 @app.route('/lista')
 def lista():
+    """Lista wszystkich wpisów (tylko dla admina)"""
     if not session.get('zalogowany') or session.get('kategoria') != 'admin':
         flash('Brak uprawnień!')
         return redirect(url_for('index'))
 
     try:
+        # Pobranie wszystkich wpisów, sortowanie od najnowszych
         wpisy = Wpis.query.order_by(Wpis.data_wpisu.desc()).all()
         return render_template('lista.html', wpisy=wpisy)
 
@@ -145,10 +187,12 @@ def lista():
 
 @app.route('/lista/<kategoria>')
 def lista_kategoria(kategoria):
+    """Lista wpisów z określonej kategorii"""
     if not session.get('zalogowany'):
         flash('Musisz się zalogować!')
         return redirect(url_for('index'))
 
+    # Admin może przeglądać wszystkie kategorie
     if session.get('kategoria') != 'admin' and session.get('kategoria') != kategoria:
         flash('Możesz przeglądać tylko swoje wpisy!')
         return redirect(url_for('formularz'))
@@ -164,16 +208,19 @@ def lista_kategoria(kategoria):
 
 @app.route('/stats')
 def stats():
+    """Statystyki wpisów (tylko dla admina)"""
     if not session.get('zalogowany') or session.get('kategoria') != 'admin':
         flash('Brak uprawnień!')
         return redirect(url_for('index'))
 
     try:
+        # Statystyki podstawowe
         total_wpisy = Wpis.query.count()
         wpisy_dzis = Wpis.query.filter(
             db.func.date(Wpis.data_wpisu) == datetime.utcnow().date()
         ).count()
 
+        # Statystyki per kategoria
         stats_kategorie = db.session.query(
             Wpis.kategoria,
             db.func.count(Wpis.id).label('liczba')
@@ -210,5 +257,10 @@ def internal_server_error(e):
 
 
 if __name__ == '__main__':
-    init_database()
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    print("Startowanie aplikacji...")
+    if init_database():
+        print("Aplikacja gotowa do działania!")
+        app.run(host='0.0.0.0', port=5000, debug=False)
+    else:
+        print("BŁĄD: Nie udało się zainicjalizować bazy danych. Aplikacja nie zostanie uruchomiona.")
+        exit(1)
