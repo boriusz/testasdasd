@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "80:5000"
+    environment:
+      - DATABASE_URL=postgresql://admin:haslo123@db:5432/wydarzenia_db
+      - FLASK_ENV=production
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=wydarzenia_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=haslo123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

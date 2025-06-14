@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista Wpisów</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .nav-links a { color: #007bff; text-decoration: none; margin-left: 15px; }
+        .nav-links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Lista Wszystkich Wpisów</h1>
+            <div class="nav-links">
+                <a href="/formularz">Nowy wpis</a>
+                <a href="/wyloguj">Wyloguj</a>
+            </div>
+        </div>
+
+        {% if wpisy %}
+            <p>Łącznie wpisów: {{ wpisy|length }}</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Imię</th>
+                        <th>Email</th>
+                        <th>Telefon</th>
+                        <th>Wiadomość</th>
+                        <th>Kategoria</th>
+                        <th>Data wpisu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for wpis in wpisy %}
+                    <tr>
+                        <td>{{ wpis[0] }}</td>
+                        <td>{{ wpis[1] }}</td>
+                        <td>{{ wpis[2] }}</td>
+                        <td>{{ wpis[3] or '-' }}</td>
+                        <td>{{ wpis[4][:50] + '...' if wpis[4] and wpis[4]|length > 50 else (wpis[4] or '-') }}</td>
+                        <td>{{ wpis[6] }}</td>
+                        <td>{{ wpis[5].strftime('%Y-%m-%d %H:%M') if wpis[5] else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Brak wpisów w bazie danych.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

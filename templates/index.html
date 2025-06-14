@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Zapisów na Wydarzenia</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; }
+        .container { background: #f5f5f5; padding: 30px; border-radius: 10px; }
+        input[type="password"] { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+        button { background: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; width: 100%; }
+        button:hover { background: #0056b3; }
+        .alert { color: red; margin: 10px 0; }
+        .info { background: #e7f3ff; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #007bff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>System Zapisów na Wydarzenia</h1>
+
+        <div class="info">
+            <strong>Dostępne hasła testowe:</strong><br>
+            • admin123 - dostęp administratora<br>
+            • haslo1 - wydarzenie 1<br>
+            • haslo2 - wydarzenie 2
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="/login">
+            <label for="haslo">Wprowadź hasło dostępu:</label>
+            <input type="password" id="haslo" name="haslo" required>
+            <button type="submit">Zaloguj się</button>
+        </form>
+
+        <p style="margin-top: 30px; font-size: 12px; color: #666;">
+            System do zbierania informacji o wydarzeniach. Wprowadź odpowiednie hasło aby uzyskać dostęp do formularza.
+        </p>
+    </div>
+</body>
+</html>
