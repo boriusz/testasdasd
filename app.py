@@ -175,9 +175,11 @@ def lista():
         flash('Brak uprawnień!')
         return redirect(url_for('index'))
 
+    print("hello")
     try:
         # Pobranie wszystkich wpisów, sortowanie od najnowszych
         wpisy = Wpis.query.order_by(Wpis.data_wpisu.desc()).all()
+        print(wpisy)
         return render_template('lista.html', wpisy=wpisy)
 
     except Exception as e:
@@ -257,7 +259,7 @@ def internal_server_error(e):
 
 
 if __name__ == '__main__':
-    print("Startowanie aplikacji...")
+    print("Startowanie aplikacji... 123")
     if init_database():
         print("Aplikacja gotowa do działania!")
         app.run(host='0.0.0.0', port=5000, debug=False)

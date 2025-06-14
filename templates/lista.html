@@ -43,13 +43,13 @@
                 <tbody>
                     {% for wpis in wpisy %}
                     <tr>
-                        <td>{{ wpis[0] }}</td>
-                        <td>{{ wpis[1] }}</td>
-                        <td>{{ wpis[2] }}</td>
-                        <td>{{ wpis[3] or '-' }}</td>
-                        <td>{{ wpis[4][:50] + '...' if wpis[4] and wpis[4]|length > 50 else (wpis[4] or '-') }}</td>
-                        <td>{{ wpis[6] }}</td>
-                        <td>{{ wpis[5].strftime('%Y-%m-%d %H:%M') if wpis[5] else '-' }}</td>
+                        <td>{{ wpis.id }}</td>
+                        <td>{{ wpis.nazwisko }}</td>
+                        <td>{{ wpis.email }}</td>
+                        <td>{{ wpis.wiadomosc or '-' }}</td>
+                        <td>{{ wpis[:50] + '...' if wpis[4] and wpis[4]|length > 50 else (wpis[4] or '-') }}</td>
+                        <td>{{ wpis }}</td>
+                        <td>{{ wpis.strftime('%Y-%m-%d %H:%M') if wpis[5] else '-' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
